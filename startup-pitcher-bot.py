@@ -1,3 +1,4 @@
+import re
 import streamlit as st
 from agno.agent import Agent
 from agno.tools.serpapi import SerpApiTools
@@ -167,26 +168,25 @@ def generate_startup_pitch(startup_pitch_preferences: str) -> str:
     return pitch_deck
 
 def render_pitch_columns(pitch_deck: str) -> None:
-    import re
 
-    # Split the pitch into individual slides based on markdown headers
-    slides = re.split(r"(?:^|\n)### Slide \d+: ", pitch_deck)[1:]  # remove any leading text
-    slide_titles = re.findall(r"(?:^|\n)### Slide \d+: (.+)", pitch_deck)
+    # Match and extract slide blocks: (title, content)
+    pattern = r"### Slide (\d+): (.+?)\n(.+?)(?=(?:\n### Slide \d+:|\Z))"
+    matches = re.findall(pattern, pitch_deck, re.DOTALL)
 
-    # Combine titles and contents
-    slide_chunks = [
-        f"### Slide {i+1}: {slide_titles[i]}\n{slides[i].strip()}"
-        for i in range(min(len(slides), len(slide_titles)))
+    # Combine title and body properly
+    slides = [
+        f"### Slide {num}: {title.strip()}\n{content.strip()}"
+        for num, title, content in matches
     ]
 
-    # Arrange in 3 columns
+    # Arrange in 2 columns
     col1, col2 = st.columns(2)
 
-    for i, slide in enumerate(slide_chunks):
+    for i, slide in enumerate(slides):
         if i % 2 == 0:
             with col1:
                 st.markdown(slide, unsafe_allow_html=True)
-        elif i % 2 == 1:
+        else:
             with col2:
                 st.markdown(slide, unsafe_allow_html=True)
 
